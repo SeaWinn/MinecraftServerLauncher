@@ -2,6 +2,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 #define RESET   "\x1b[0m"
@@ -31,7 +32,6 @@ int main(void) {
         return 1;
     }
 
-
     while (true) {
         const struct dirent *entry = readdir(rootDir);
 
@@ -52,16 +52,34 @@ int main(void) {
 
     closedir(rootDir);
 
+    int pickedServer;
     for (int i = 0; i < serverCount; i++) {
         printf(BOLD RED "[%d]" RESET BOLD " : %s\n" RESET,i, strrchr(serverPaths[i], '/'));
     }
 
-    int pickedServer;
-    printf("Pick a server (0-127): ");
-    scanf("%d", &pickedServer);
+    char buffer[64];
+    while (true) {
+        fgets(buffer, sizeof(buffer), stdin);
 
+        char *endptr;
+        const long value = strtol(buffer, &endptr, 10);
+
+        if (endptr == buffer) {
+            printf("Error: Not a number.\n");
+            continue;
+        }
+        if (*endptr != '\n' && *endptr != '\0') {
+            printf("Error: Invalid characters in input.\n");
+            continue;
+        }
+        if (value < 0 || value >= serverCount) {
+            printf("Error: Number must be between 0 and %d.\n", serverCount - 1);
+            continue;
+        }
+        pickedServer = (int)value;
+        break;
+    }
     printf("Launching %s...\n",strrchr(serverPaths[pickedServer], '/'));
-
     return 0;
 }
 
