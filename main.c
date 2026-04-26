@@ -4,8 +4,12 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-bool checkFolderName(const char *rootPath, const char *fileName);
-bool checkIfHasJar(const char *path);
+#define RESET   "\x1b[0m"
+#define RED     "\x1b[31m"
+#define BOLD    "\x1b[1m"
+
+bool isAValidFolder(const char *rootPath, const char *fileName);
+bool folderHasJar(const char *path);
 
 int main(void) {
     char rootServerPath[512];
@@ -31,17 +35,15 @@ int main(void) {
     while (true) {
         const struct dirent *entry = readdir(rootDir);
 
-        if (entry == NULL) {
-            break;
-        }
+        if (entry == NULL) break;
         if (serverCount >= 127) {
             printf("Over 128 servers found, aborting.\n");
             return 1;
         }
-        if (checkFolderName(rootServerPath, entry->d_name)) {
+        if (isAValidFolder(rootServerPath, entry->d_name)) {
             char fullPath[512];
             snprintf(fullPath, sizeof(fullPath), "%s/%s", rootServerPath, entry->d_name);
-            if (checkIfHasJar(fullPath)) {
+            if (folderHasJar(fullPath)) {
                 snprintf(serverPaths[serverCount], 512, "%s/%s",rootServerPath, entry->d_name);
                 serverCount++;
             }
@@ -51,15 +53,19 @@ int main(void) {
     closedir(rootDir);
 
     for (int i = 0; i < serverCount; i++) {
-        printf("%s\n", serverPaths[i]);
+        printf(BOLD RED "[%d]" RESET BOLD " : %s\n" RESET,i, strrchr(serverPaths[i], '/'));
     }
 
-    printf("%d\n", serverCount);
+    int pickedServer;
+    printf("Pick a server (0-127): ");
+    scanf("%d", &pickedServer);
+
+    printf("Launching %s...\n",strrchr(serverPaths[pickedServer], '/'));
 
     return 0;
 }
 
-bool checkFolderName(const char *rootPath, const char *fileName) {
+bool isAValidFolder(const char *rootPath, const char *fileName) {
     if (strcmp(fileName, ".") == 0) return false;
     if (strcmp(fileName, "..") == 0) return false;
 
@@ -73,7 +79,7 @@ bool checkFolderName(const char *rootPath, const char *fileName) {
     return true;
 }
 
-bool checkIfHasJar(const char *path) {
+bool folderHasJar(const char *path) {
     DIR * iteratedDir = opendir(path);
     if (iteratedDir == NULL) return false;
 
@@ -93,7 +99,6 @@ bool checkIfHasJar(const char *path) {
             }
         }
     }
-
     closedir(iteratedDir);
     return false;
 
